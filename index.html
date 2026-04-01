@@ -38,6 +38,12 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
 .selector-wrap select option { background:var(--ink); color:var(--white); }
 #loading { color:var(--sage-m); font-size:14px; margin-top:10px; font-weight:500; }
 
+/* EMPTY STATE (Pantalla de relleno) */
+.empty-state { max-width:600px; margin:4rem auto; text-align:center; padding:3rem 2rem; background:var(--white); border:1px dashed var(--sage-m); border-radius:14px; display:none; }
+.empty-state-icon { font-size:3rem; margin-bottom:1rem; opacity:0.8; }
+.empty-state h2 { font-family:var(--display); font-size:1.8rem; color:var(--sage); margin-bottom:0.75rem; font-weight:300; }
+.empty-state p { font-size:14px; color:var(--ink2); line-height:1.6; }
+
 /* RESULTS */
 .results-wrap{display:none;min-height:100vh;background:var(--bg)}
 .results-hero{
@@ -103,7 +109,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
   .dim-card-top{flex-wrap:wrap}
 }
 @media print{
-  .selector-wrap, .btn-print{display:none!important}
+  .selector-wrap, .btn-print, .empty-state {display:none!important}
   .results-hero{background:var(--ink)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 </style>
@@ -117,10 +123,16 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
   <div id="loading">Sincronizando base de datos...</div>
 </div>
 
+<div id="emptyState" class="empty-state">
+  <div class="empty-state-icon">📊</div>
+  <h2>Panel de Resultados</h2>
+  <p>Bienvenido al panel de evaluación de <strong>SER Ambiental</strong>. Por favor, utilice el menú superior para seleccionar a un candidato y visualizar su perfil psicológico, gráfico de dimensiones y análisis detallado de tendencias.</p>
+</div>
+
 <div class="results-wrap" id="resultsWrap"></div>
 
 <script>
-// BASE DE DATOS E INTERPRETACIONES (Igual que el diseño original)
+// BASE DE DATOS E INTERPRETACIONES
 const dimMeta = {
   D:{ name:'Toma de decisiones', sub:'Analítico y riguroso ↔ Ágil y resolutivo', color:'#1e6b78', bg:'#e4f0f2', barColor:'#1e6b78', icon:'⚖️',
       poles:['Analítico y riguroso','Ágil y resolutivo'],
@@ -166,7 +178,7 @@ function getProfileLabel(leftPct, meta){
   return 'Perfil equilibrado';
 }
 
-// 1. EL ENLACE DE TU GOOGLE SHEETS
+// 1. PEGA AQUÍ TU ENLACE CSV PÚBLICO
 const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5f_FRIjEuKWkWLETxobaqxwb8nFsYv-NYHiIlBpjG3e8cQxFP6K7i2NmkmFGpaqtJqR3_G2mTTRTS/pub?gid=2020114578&single=true&output=csv';
 
 let baseDeDatos = [];
@@ -179,8 +191,11 @@ Papa.parse(csvUrl, {
     const selector = document.getElementById('lista-candidatos');
     
     filas.forEach((fila, index) => {
-      const nombre = fila[2]; // Busca el nombre en la columna C
-      if(nombre && nombre.trim() !== "" && nombre.toLowerCase() !== "nombre" && nombre.toLowerCase() !== "nombre del candidato" && nombre.toLowerCase() !== "marca temporal") {
+      const nombre = fila[2] ? fila[2].trim() : ""; 
+      const nombreStr = nombre.toLowerCase();
+      
+      // Aquí agregamos "nombre completo" a la lista de palabras prohibidas
+      if(nombre && nombreStr !== "" && nombreStr !== "nombre" && nombreStr !== "nombre del candidato" && nombreStr !== "nombre completo" && nombreStr !== "marca temporal") {
         baseDeDatos[index] = fila; 
         let opcion = document.createElement('option');
         opcion.value = index;
@@ -189,19 +204,25 @@ Papa.parse(csvUrl, {
       }
     });
 
+    // Ocultar texto de carga y mostrar el cuadro de relleno
     document.getElementById('loading').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
   }
 });
 
 function mostrarCandidato(indexFila) {
+  // Si vuelve a la opción vacía, ocultar resultados y mostrar pantalla de relleno
   if(!indexFila || indexFila === "") {
-    document.getElementById('resultsWrap').style.display='none';
+    document.getElementById('resultsWrap').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'block';
     return;
   }
   
+  // Si elige un candidato, ocultar pantalla de relleno y mostrar resultados
   const fila = baseDeDatos[indexFila];
+  document.getElementById('emptyState').style.display = 'none';
   const rw = document.getElementById('resultsWrap');
-  rw.style.display='block';
+  rw.style.display = 'block';
 
   // Datos del candidato
   const fechaStr = fila[0];
@@ -226,7 +247,7 @@ function mostrarCandidato(indexFila) {
   const cx=90, cy=90, r=65;
   const angles=dims.map((_,i)=>((i/dims.length)*2*Math.PI)-(Math.PI/2));
   const points=dims.map((d,i)=>{
-    const leftPct=((avg[d]-1)/3); // Ajustado a escala de 1 a 4
+    const leftPct=((avg[d]-1)/3); 
     const rr=leftPct*r;
     return [cx+rr*Math.cos(angles[i]), cy+rr*Math.sin(angles[i])];
   });
@@ -238,14 +259,14 @@ function mostrarCandidato(indexFila) {
   // Leyendas
   const legendHTML=dims.map(d=>{
     const meta=dimMeta[d];
-    const leftPct=Math.round(((avg[d]-1)/3)*100); // Ajustado a escala 1 a 4
+    const leftPct=Math.round(((avg[d]-1)/3)*100); 
     return `<div class="legend-item"><div class="legend-dot" style="background:${meta.barColor}"></div><div class="legend-label">${meta.name}</div><div class="legend-val">${getProfileLabel(leftPct, meta)}</div></div>`;
   }).join('');
 
   // Tarjetas de Dimensiones
   const dimCards=dims.map(d=>{
     const meta=dimMeta[d];
-    const leftPct=Math.round(((avg[d]-1)/3)*100); // Ajustado a escala 1 a 4
+    const leftPct=Math.round(((avg[d]-1)/3)*100); 
     const rightPos=100-leftPct;
     const badge=getProfileLabel(leftPct, meta);
     const interp=leftPct>=65 ? meta.left : leftPct<=35 ? meta.right : meta.mid;
