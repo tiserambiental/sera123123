@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard SER Ambiental</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; color: #333; margin: 0; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .header { display: flex; justify-content: space-between; border-bottom: 3px solid #2D5A27; padding-bottom: 15px; margin-bottom: 25px; }
+    .header h1 { color: #2D5A27; margin: 0; font-size: 24px; text-transform: uppercase; }
+    .header p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f9fbf9; padding: 15px; border-radius: 8px; margin-bottom: 30px; }
+    .info-item span { font-weight: bold; color: #2D5A27; }
+    .chart-container { width: 100%; max-width: 500px; margin: 0 auto 40px auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th { background-color: #2D5A27; color: white; padding: 12px; text-align: left; }
+    td { padding: 12px; border-bottom: 1px solid #eee; }
+    .tendencia { font-weight: bold; color: #444; }
+    #loading { text-align: center; color: #2D5A27; font-size: 18px; margin-top: 50px; }
+    #dashboard { display: none; }
+  </style>
+</head>
+<body>
+
+  <div id="loading">Cargando datos del candidato...</div>
+
+  <div class="container" id="dashboard">
+    <div class="header">
+      <div><h1>Evaluación de Perfil</h1><p>SER Ambiental S.A.S ESP</p></div>
+      <div style="text-align: right;"><p><strong>Fecha:</strong> <span id="val-fecha"></span></p></div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-item"><span>Nombre:</span> <span id="val-nombre"></span></div>
+      <div class="info-item"><span>Cargo/Área:</span> <span id="val-cargo"></span></div>
+      <div class="info-item"><span>Correo:</span> <span id="val-correo"></span></div>
+      <div class="info-item"><span>Experiencia:</span> <span id="val-exp"></span></div>
+    </div>
+
+    <h3 style="color: #2D5A27; text-align: center;">Gráfico de Dimensiones (Escala 1 a 4)</h3>
+    <div class="chart-container"><canvas id="radarChart"></canvas></div>
+
+    <h3 style="color: #2D5A27;">Análisis de Tendencias</h3>
+    <table>
+      <thead><tr><th>Dimensión</th><th>Puntaje</th><th>Tendencia Predominante</th></tr></thead>
+      <tbody id="tabla-tendencias"></tbody>
+    </table>
+  </div>
+
+  <script>
+    // 1. Obtener la fila desde la URL (ej: misitio.com/?fila=3)
+    const urlParams = new URLSearchParams(window.location.search);
+    // Si no hay fila en la URL, usamos la 3 por defecto para pruebas
+    const filaBuscada = urlParams.get('fila') ? parseInt(urlParams.get('fila')) : 3; 
+
+    // 2. LA URL DE TU GOOGLE SHEETS (Reemplaza esto por tu link del Paso 1)
+    const csvUrl = 'PEGAR_AQUI_EL_LINK_CSV_DE_GOOGLE_SHEETS';
+
+    // 3. Descargar y procesar los datos
+    Papa.parse(csvUrl, {
+      download: true,
+      header: false,
+      complete: function(results) {
+        const datos = results.data;
+        
+        // Las matrices en JS empiezan en 0, así que la fila 3 del Excel es el índice 2
+        const indice = filaBuscada - 1; 
+        
+        if(!datos[indice] || !datos[indice][2]) {
+          document.getElementById('loading').innerText = "Candidato no encontrado en la fila " + filaBuscada;
+          return;
+        }
+
+        const fila = datos[indice];
+        
+        // Ajusta estos números (0, 1, 2...) según en qué columna de tu Excel esté cada cosa
+        // Columna A = 0, B = 1, C = 2, D = 3, etc.
+        const fecha = fila[0];
+        const correo = fila[1];
+        const nombre = fila[2];
+        const cargo = fila[3];
+        const exp = fila[4];
+
+        // Las columnas de los puntajes finales (Ajusta los índices. BB = 53)
+        const p = [
+          parseFloat(fila[53]), parseFloat(fila[54]), parseFloat(fila[55]), 
+          parseFloat(fila[56]), parseFloat(fila[57]), parseFloat(fila[58])
+        ];
+
+        // Inyectar texto en el HTML
+        document.getElementById('val-fecha').innerText = fecha;
+        document.getElementById('val-nombre').innerText = nombre;
+        document.getElementById('val-correo').innerText = correo;
+        document.getElementById('val-cargo').innerText = cargo;
+        document.getElementById('val-exp').innerText = exp;
+
+        // Dibujar Tabla
+        const nombres = ["Toma de Decisiones", "Motivación", "Presión y Cambio", "Relaciones", "Ejecución", "Disponibilidad"];
+        const textos = [
+          p[0] < 2.5 ? "Analítico y riguroso" : "Ágil y resolutivo",
+          p[1] < 2.5 ? "Estabilidad y seguridad" : "Logro y crecimiento",
+          p[2] < 2.5 ? "Estructura y planificación" : "Adaptabilidad y flexibilidad",
+          p[3] < 2.5 ? "Trabajo individual" : "Trabajo colaborativo",
+          p[4] < 2.5 ? "Estratégico y global" : "Operativo y detallista",
+          p[5] < 2.5 ? "Horario fijo y predecible" : "Disponibilidad amplia"
+        ];
+
+        let htmlTabla = '';
+        for(let i=0; i<6; i++){
+          htmlTabla += `<tr>
+            <td>${nombres[i]}</td>
+            <td style="text-align:center; font-weight:bold; color:#2D5A27;">${p[i].toFixed(1)}</td>
+            <td class="tendencia">${textos[i]}</td>
+          </tr>`;
+        }
+        document.getElementById('tabla-tendencias').innerHTML = htmlTabla;
+
+        // Dibujar Gráfico
+        const ctx = document.getElementById('radarChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'radar',
+          data: {
+            labels: nombres,
+            datasets: [{
+              label: 'Puntaje',
+              data: p,
+              backgroundColor: 'rgba(45, 90, 39, 0.2)', 
+              borderColor: 'rgba(45, 90, 39, 1)',       
+              pointBackgroundColor: 'rgba(45, 90, 39, 1)',
+              borderWidth: 2
+            }]
+          },
+          options: { scales: { r: { min: 1, max: 4, ticks: { stepSize: 1 } } } }
+        });
+
+        // Mostrar todo
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('dashboard').style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>
