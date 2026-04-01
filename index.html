@@ -227,7 +227,7 @@ function mostrarCandidato(indexFila) {
   const cargo = fila[3];
   const exp = fila[4];
 
-  // --- CÁLCULO DE VARIANZA (Nivel de Polarización) ---
+  // --- CÁLCULO DE VARIANZA (Nivel de Polarización) e INTERPRETACIÓN ---
   let respuestas = [];
   for(let i = 5; i <= 52; i++) {
     let valor = parseFloat(fila[i]);
@@ -237,12 +237,24 @@ function mostrarCandidato(indexFila) {
   }
 
   let varianzaText = "Sin datos";
+  let varianzaEtiqueta = "";
+  
   if(respuestas.length > 0) {
     let suma = respuestas.reduce((a, b) => a + b, 0);
     let media = suma / respuestas.length;
     let sumaDiferencias = respuestas.reduce((a, b) => a + Math.pow(b - media, 2), 0);
     let varianza = sumaDiferencias / respuestas.length;
+    
     varianzaText = varianza.toFixed(2);
+    
+    // Asignación de la etiqueta descriptiva según el valor
+    if(varianza >= 1.0) {
+        varianzaEtiqueta = "Convicciones muy marcadas (Posturas definidas)";
+    } else if (varianza >= 0.5) {
+        varianzaEtiqueta = "Equilibrio normal (Consistencia moderada)";
+    } else {
+        varianzaEtiqueta = "Tendencia a la neutralidad (Cautela al decidir)";
+    }
   }
   // ---------------------------------------------------
 
@@ -311,14 +323,20 @@ function mostrarCandidato(indexFila) {
     </div>`;
   }).join('');
 
-  // Inyectar HTML (Se agregó la Varianza en la clase r-meta)
+  // Inyectar HTML (Con el indicador de Varianza y su explicación)
   rw.innerHTML=`
     <div class="results-hero">
       <div class="results-hero-inner">
         <div class="r-eyebrow">SER Ambiental · Resultados del perfil · ${fechaStr}</div>
         <div class="r-name">${nombre}</div>
-        <div class="r-meta">${cargo || 'Cargo no especificado'} · ${exp || 'Exp no especificada'} &nbsp;|&nbsp; <strong>Polarización (Varianza): ${varianzaText}</strong></div>
-        <div class="radar-row">
+        <div class="r-meta" style="margin-bottom: 1rem;">${cargo || 'Cargo no especificado'} · ${exp || 'Exp no especificada'}</div>
+        
+        <div class="r-meta" style="background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; display: inline-block; border: 1px solid rgba(255,255,255,0.1);">
+          <strong>Índice de Polarización: ${varianzaText}</strong> <br>
+          <span style="color: rgba(255,255,255,0.6); font-style: italic;">${varianzaEtiqueta}</span>
+        </div>
+        
+        <div class="radar-row" style="margin-top: 1.5rem;">
           <div class="radar-svg-wrap">${radarSVG}</div>
           <div class="radar-legend">${legendHTML}</div>
         </div>
