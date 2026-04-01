@@ -178,7 +178,7 @@ function getProfileLabel(leftPct, meta){
   else return `Predominio: ${meta.poles[1]}`;
 }
 
-// 1. PEGA AQUÍ TU ENLACE CSV PÚBLICO
+// ENLACE CSV PÚBLICO
 const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5f_FRIjEuKWkWLETxobaqxwb8nFsYv-NYHiIlBpjG3e8cQxFP6K7i2NmkmFGpaqtJqR3_G2mTTRTS/pub?gid=2020114578&single=true&output=csv';
 
 let baseDeDatos = [];
@@ -194,7 +194,6 @@ Papa.parse(csvUrl, {
       const nombre = fila[2] ? fila[2].trim() : ""; 
       const nombreStr = nombre.toLowerCase();
       
-      // Aquí agregamos "nombre completo" a la lista de palabras prohibidas
       if(nombre && nombreStr !== "" && nombreStr !== "nombre" && nombreStr !== "nombre del candidato" && nombreStr !== "nombre completo" && nombreStr !== "marca temporal") {
         baseDeDatos[index] = fila; 
         let opcion = document.createElement('option');
@@ -204,21 +203,18 @@ Papa.parse(csvUrl, {
       }
     });
 
-    // Ocultar texto de carga y mostrar el cuadro de relleno
     document.getElementById('loading').style.display = 'none';
     document.getElementById('emptyState').style.display = 'block';
   }
 });
 
 function mostrarCandidato(indexFila) {
-  // Si vuelve a la opción vacía, ocultar resultados y mostrar pantalla de relleno
   if(!indexFila || indexFila === "") {
     document.getElementById('resultsWrap').style.display = 'none';
     document.getElementById('emptyState').style.display = 'block';
     return;
   }
   
-  // Si elige un candidato, ocultar pantalla de relleno y mostrar resultados
   const fila = baseDeDatos[indexFila];
   document.getElementById('emptyState').style.display = 'none';
   const rw = document.getElementById('resultsWrap');
@@ -230,6 +226,25 @@ function mostrarCandidato(indexFila) {
   const nombre = fila[2];
   const cargo = fila[3];
   const exp = fila[4];
+
+  // --- CÁLCULO DE VARIANZA (Nivel de Polarización) ---
+  let respuestas = [];
+  for(let i = 5; i <= 52; i++) {
+    let valor = parseFloat(fila[i]);
+    if(!isNaN(valor) && valor >= 1 && valor <= 4) {
+      respuestas.push(valor);
+    }
+  }
+
+  let varianzaText = "Sin datos";
+  if(respuestas.length > 0) {
+    let suma = respuestas.reduce((a, b) => a + b, 0);
+    let media = suma / respuestas.length;
+    let sumaDiferencias = respuestas.reduce((a, b) => a + Math.pow(b - media, 2), 0);
+    let varianza = sumaDiferencias / respuestas.length;
+    varianzaText = varianza.toFixed(2);
+  }
+  // ---------------------------------------------------
 
   // Extraer puntajes (Columnas 53 a 58)
   const avg = {
@@ -270,7 +285,7 @@ function mostrarCandidato(indexFila) {
     const rightPos=100-leftPct;
     const badge=getProfileLabel(leftPct, meta);
     
-    // Nueva lógica: O es blanco o es negro, no hay grises
+    // Lógica: O es blanco o es negro, no hay grises
     const interp=leftPct>=50 ? meta.left : meta.right;
     const tags=leftPct>=50 ? meta.tags_left : meta.tags_right;
     
@@ -296,13 +311,13 @@ function mostrarCandidato(indexFila) {
     </div>`;
   }).join('');
 
-  // Inyectar HTML
+  // Inyectar HTML (Se agregó la Varianza en la clase r-meta)
   rw.innerHTML=`
     <div class="results-hero">
       <div class="results-hero-inner">
         <div class="r-eyebrow">SER Ambiental · Resultados del perfil · ${fechaStr}</div>
         <div class="r-name">${nombre}</div>
-        <div class="r-meta">${cargo || 'Cargo no especificado'} · ${exp || 'Exp no especificada'}</div>
+        <div class="r-meta">${cargo || 'Cargo no especificado'} · ${exp || 'Exp no especificada'} &nbsp;|&nbsp; <strong>Polarización (Varianza): ${varianzaText}</strong></div>
         <div class="radar-row">
           <div class="radar-svg-wrap">${radarSVG}</div>
           <div class="radar-legend">${legendHTML}</div>
