@@ -59,8 +59,8 @@
   </div>
 
   <script>
-    // 1. PEGA AQUÍ TU LINK CSV REAL DE GOOGLE SHEETS
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5f_FRIjEuKWkWLETxobaqxwb8nFsYv-NYHiIlBpjG3e8cQxFP6K7i2NmkmFGpaqtJqR3_G2mTTRTS/pubhtml?gid=2020114578&single=true';
+    // 1. PEGA AQUÍ LA URL EXACTA QUE SALE EN LA BARRA DE DIRECCIONES DE TU FOTO
+    const csvUrl = 'https://docs.google.com/spreadsheets/u/1/d/e/2PACX-1vQ5f_FRIjEuKWkWLETxobaqxwb8nFsYv-NYHiIlBpjG3e8cQxFP6K7i2NmkmFGpaqtJqR3_G2mTTRTS/pubhtml?gid=2020114578&single=true';
     
     let baseDeDatos = [];
     let graficoActual = null;
@@ -75,8 +75,9 @@
         selector.innerHTML = '<option value="">-- Seleccione un candidato --</option>';
 
         filas.forEach((fila, index) => {
-          const nombre = fila[2]; // Columna C es el Nombre en tu nuevo formato
-          if(nombre && nombre.trim() !== "" && nombre.toLowerCase() !== "nombre" && nombre.toLowerCase() !== "nombre del candidato") {
+          const nombre = fila[2]; // Basado en tu foto, el nombre es la posición 2
+          
+          if(nombre && nombre.trim() !== "" && nombre.toLowerCase() !== "nombre" && nombre.toLowerCase() !== "nombre del candidato" && nombre.toLowerCase() !== "marca temporal") {
             baseDeDatos[index] = fila; 
             let opcion = document.createElement('option');
             opcion.value = index;
@@ -95,20 +96,20 @@
       
       const fila = baseDeDatos[indexFila];
       
-      // Extracción adaptada a tu archivo: BC(54), BD(55), BE(56), BF(57), BG(58), BH(59)
+      // Extracción milimétrica basada en tu foto
+      document.getElementById('val-fecha').innerText = fila[0];
+      document.getElementById('val-correo').innerText = fila[1];
+      document.getElementById('val-nombre').innerText = fila[2];
+      document.getElementById('val-cargo').innerText = fila[3]; // Si no tienes cargo, saldrá vacío
+      document.getElementById('val-exp').innerText = fila[4];
+
+      // Los puntajes matemáticos están en las posiciones 53 a 58
       const p = [
-        parseFloat(fila[54]), parseFloat(fila[55]), parseFloat(fila[56]), 
-        parseFloat(fila[57]), parseFloat(fila[58]), parseFloat(fila[59])
+        parseFloat(fila[53]), parseFloat(fila[54]), parseFloat(fila[55]), 
+        parseFloat(fila[56]), parseFloat(fila[57]), parseFloat(fila[58])
       ];
 
-      // Inyectar textos según tus nuevas columnas
-      document.getElementById('val-fecha').innerText = fila[0]; // Columna A
-      document.getElementById('val-nombre').innerText = fila[2]; // Columna C
-      document.getElementById('val-correo').innerText = fila[3]; // Columna D
-      document.getElementById('val-cargo').innerText = fila[4]; // Columna E
-      document.getElementById('val-exp').innerText = fila[5];   // Columna F
-
-      // Lógica de tendencias (El punto medio entre 1 y 4 es 2.5)
+      // Nombres y lógicas (Escala 1 a 4, punto medio 2.5)
       const nombres = ["Toma de Decisiones", "Motivación", "Presión y Cambio", "Relaciones", "Ejecución", "Disponibilidad"];
       const textos = [
         p[0] < 2.5 ? "Analítico y riguroso" : "Ágil y resolutivo",
@@ -123,7 +124,7 @@
       for(let i=0; i<6; i++){
         htmlTabla += `<tr>
           <td>${nombres[i]}</td>
-          <td style="text-align:center; font-weight:bold; color:#2D5A27;">${p[i].toFixed(1)}</td>
+          <td style="text-align:center; font-weight:bold; color:#2D5A27;">${(p[i] || 0).toFixed(1)}</td>
           <td class="tendencia">${textos[i]}</td>
         </tr>`;
       }
