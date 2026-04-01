@@ -173,9 +173,9 @@ const dimMeta = {
 };
 
 function getProfileLabel(leftPct, meta){
-  if(leftPct >= 65) return `Predominio: ${meta.poles[0]}`;
-  if(leftPct <= 35) return `Predominio: ${meta.poles[1]}`;
-  return 'Perfil equilibrado';
+  // Corte de guillotina al 50%. Adiós al perfil equilibrado.
+  if(leftPct >= 50) return `Predominio: ${meta.poles[0]}`;
+  else return `Predominio: ${meta.poles[1]}`;
 }
 
 // 1. PEGA AQUÍ TU ENLACE CSV PÚBLICO
@@ -269,8 +269,11 @@ function mostrarCandidato(indexFila) {
     const leftPct=Math.round(((avg[d]-1)/3)*100); 
     const rightPos=100-leftPct;
     const badge=getProfileLabel(leftPct, meta);
-    const interp=leftPct>=65 ? meta.left : leftPct<=35 ? meta.right : meta.mid;
-    const tags=leftPct>=65 ? meta.tags_left : leftPct<=35 ? meta.tags_right : [...meta.tags_left.slice(0,1), ...meta.tags_right.slice(0,2)];
+    
+    // Nueva lógica: O es blanco o es negro, no hay grises
+    const interp=leftPct>=50 ? meta.left : meta.right;
+    const tags=leftPct>=50 ? meta.tags_left : meta.tags_right;
+    
     return `<div class="dim-card">
       <div class="dim-card-top">
         <div class="dim-icon" style="background:${meta.bg}">${meta.icon}</div>
