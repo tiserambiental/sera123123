@@ -57,7 +57,7 @@
     const filaBuscada = urlParams.get('fila') ? parseInt(urlParams.get('fila')) : 3; 
 
     // 2. LA URL DE TU GOOGLE SHEETS (Reemplaza esto por tu link del Paso 1)
-    const csvUrl = 'PEGAR_AQUI_EL_LINK_CSV_DE_GOOGLE_SHEETS';
+    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5f_FRIjEuKWkWLETxobaqxwb8nFsYv-NYHiIlBpjG3e8cQxFP6K7i2NmkmFGpaqtJqR3_G2mTTRTS/pub?output=csv';
 
     // 3. Descargar y procesar los datos
     Papa.parse(csvUrl, {
