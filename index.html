@@ -1,162 +1,295 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard Directivo - SER Ambiental</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f8; color: #333; margin: 0; padding: 20px; }
-    .container { max-width: 800px; margin: 0 auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    .header { display: flex; justify-content: space-between; border-bottom: 3px solid #2D5A27; padding-bottom: 15px; margin-bottom: 25px; align-items: center; }
-    .header h1 { color: #2D5A27; margin: 0; font-size: 24px; text-transform: uppercase; }
-    .header p { margin: 5px 0 0 0; color: #666; font-size: 14px; }
-    
-    .selector-container { background: #2D5A27; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: center; color: white; }
-    select { padding: 10px; font-size: 16px; border-radius: 5px; border: none; width: 80%; max-width: 400px; cursor: pointer; }
-    
-    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; background: #f9fbf9; padding: 15px; border-radius: 8px; margin-bottom: 30px; }
-    .info-item span { font-weight: bold; color: #2D5A27; }
-    .chart-container { width: 100%; max-width: 500px; margin: 0 auto 40px auto; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th { background-color: #2D5A27; color: white; padding: 12px; text-align: left; }
-    td { padding: 12px; border-bottom: 1px solid #eee; }
-    .tendencia { font-weight: bold; color: #444; }
-    #loading { text-align: center; color: #2D5A27; font-size: 18px; margin-top: 50px; font-weight: bold; }
-    #dashboard { display: none; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Directivo · SER Ambiental</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#181818;
+  --ink2:#4a4a4a;
+  --ink3:#909090;
+  --line:#e0e0dc;
+  --bg:#f7f7f4;
+  --white:#ffffff;
+  --sage:#3a6b4f;
+  --sage-l:#e8f0eb;
+  --sage-m:#5a9470;
+  --teal:#1e6b78;
+  --teal-l:#e4f0f2;
+  --amber:#a85e1a;
+  --amber-l:#f5ede3;
+  --plum:#5a3a7a;
+  --plum-l:#ede8f5;
+  --red:#b03030;
+  --red-l:#f5e8e8;
+  --display:'Fraunces',Georgia,serif;
+  --body:'DM Sans',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:100vh;font-size:15px}
+
+/* SELECTOR AREA */
+.selector-wrap { background:var(--ink); padding:2rem; text-align:center; position:sticky; top:0; z-index:10; border-bottom: 2px solid var(--sage-m); }
+.selector-wrap select { padding:12px; font-family:var(--body); font-size:15px; border-radius:8px; border:none; width:90%; max-width:400px; cursor:pointer; background:rgba(255,255,255,0.1); color:var(--white); outline:none; -webkit-appearance:none; appearance:none; }
+.selector-wrap select option { background:var(--ink); color:var(--white); }
+#loading { color:var(--sage-m); font-size:14px; margin-top:10px; font-weight:500; }
+
+/* RESULTS */
+.results-wrap{display:none;min-height:100vh;background:var(--bg)}
+.results-hero{
+  background:var(--ink);padding:3rem 2rem 2.5rem;
+  position:relative;overflow:hidden; border-top: 1px solid rgba(255,255,255,0.1);
+}
+.results-hero-inner{max-width:680px;margin:0 auto;position:relative;z-index:1}
+.r-eyebrow{font-size:10px;letter-spacing:0.14em;text-transform:uppercase;color:var(--sage-m);margin-bottom:0.75rem}
+.r-name{font-family:var(--display);font-size:clamp(1.6rem,5vw,2.4rem);font-weight:300;color:var(--white);margin-bottom:0.25rem; text-transform:capitalize;}
+.r-meta{font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:2rem}
+.radar-row{display:flex;align-items:center;gap:2rem;flex-wrap:wrap}
+.radar-svg-wrap{flex-shrink:0}
+.radar-legend{display:flex;flex-direction:column;gap:10px}
+.legend-item{display:flex;align-items:center;gap:8px}
+.legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.legend-label{font-size:12px;color:rgba(255,255,255,0.55)}
+.legend-val{font-size:13px;font-weight:500;color:var(--white);margin-left:auto;min-width:36px;text-align:right}
+
+.results-body{max-width:680px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.dim-card{
+  background:var(--white);border:1px solid var(--line);border-radius:14px;
+  padding:1.5rem;margin-bottom:12px;
+}
+.dim-card-top{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1rem}
+.dim-icon{
+  width:40px;height:40px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;font-size:18px;
+}
+.dim-card-texts{flex:1}
+.dim-card-name{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:2px}
+.dim-card-sub{font-size:12px;color:var(--ink3)}
+.dim-score-badge{
+  font-size:14px;font-weight:500;
+  padding:8px 12px;border-radius:8px;
+  flex-shrink:0;
+}
+.dim-bar-wrap{position:relative;margin-bottom:1rem;padding-top:14px}
+.dim-bar-bg{height:5px;background:var(--line);border-radius:3px}
+.dim-bar-marker{
+  position:absolute;top:0;width:14px;height:14px;border-radius:50%;
+  border:2px solid var(--white);box-shadow:0 1px 3px rgba(0,0,0,0.18);
+  transform:translateX(-50%);transition:left 1s cubic-bezier(.4,0,.2,1);
+}
+.dim-poles{display:flex;justify-content:space-between;margin-bottom:0.75rem}
+.dim-pole{font-size:11px;color:var(--ink3);display:flex;align-items:center;gap:4px}
+.dim-pole::before,.dim-pole::after{content:'';display:inline-block;width:20px;height:1px;background:var(--line)}
+.dim-interpretation{font-size:13px;color:var(--ink2);line-height:1.65;padding-top:0.75rem;border-top:1px solid var(--line)}
+.dim-facets{display:flex;flex-wrap:wrap;gap:6px;margin-top:0.75rem}
+.facet-tag{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
+
+.print-row{margin-bottom:1.5rem}
+.btn-print{
+  font-family:var(--body);font-size:12px;font-weight:400;
+  padding:8px 16px;border-radius:7px;
+  border:1px solid var(--line);background:var(--white);
+  color:var(--ink3);cursor:pointer;display:inline-flex;align-items:center;gap:6px;
+}
+.btn-print:hover{border-color:var(--ink3);color:var(--ink)}
+
+@media(max-width:500px){
+  .radar-row{flex-direction:column}
+  .dim-card-top{flex-wrap:wrap}
+}
+@media print{
+  .selector-wrap, .btn-print{display:none!important}
+  .results-hero{background:var(--ink)!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
 </head>
 <body>
 
-  <div id="loading">Sincronizando base de datos de candidatos...</div>
+<div class="selector-wrap">
+  <select id="lista-candidatos" onchange="mostrarCandidato(this.value)">
+    <option value="">-- Seleccione un candidato para ver su perfil --</option>
+  </select>
+  <div id="loading">Sincronizando base de datos...</div>
+</div>
 
-  <div class="container" id="dashboard">
-    <div class="header">
-      <div><h1>Panel de Resultados</h1><p>SER Ambiental S.A.S ESP</p></div>
-    </div>
+<div class="results-wrap" id="resultsWrap"></div>
 
-    <div class="selector-container">
-      <label for="lista-candidatos" style="display:block; margin-bottom:10px; font-weight:bold;">Seleccione un candidato para ver su perfil:</label>
-      <select id="lista-candidatos" onchange="mostrarCandidato(this.value)"></select>
-    </div>
+<script>
+// BASE DE DATOS E INTERPRETACIONES (Igual que el diseño original)
+const dimMeta = {
+  D:{ name:'Toma de decisiones', sub:'Analítico y riguroso ↔ Ágil y resolutivo', color:'#1e6b78', bg:'#e4f0f2', barColor:'#1e6b78', icon:'⚖️',
+      poles:['Analítico y riguroso','Ágil y resolutivo'],
+      left:'Tiende a decidir con método, estructura y evaluación previa. Valora criterios claros y reduce el riesgo antes de actuar. Aporta rigor en contextos técnicos y complejos.',
+      mid:'Alterna entre análisis y rapidez según el contexto. Puede estructurar cuando es necesario, pero también avanzar con flexibilidad.',
+      right:'Tiende a decidir con agilidad y tolerancia a la información incompleta. Puede responder rápido, aunque a veces con menor profundidad analítica inicial.',
+      tags_left:['Analítico','Criterioso','Riguroso'], tags_right:['Ágil','Resolutivo','Pragmático'] },
+  M:{ name:'Motivación y orientación', sub:'Propósito y aprendizaje ↔ Resultado y concreción', color:'#5a3a7a', bg:'#ede8f5', barColor:'#5a3a7a', icon:'🧭',
+      poles:['Propósito y aprendizaje','Resultado y concreción'],
+      left:'Se moviliza por el sentido, el aprendizaje y los desafíos intelectuales. Requiere comprender el para qué para sostener un alto involucramiento.',
+      mid:'Combina propósito y foco en resultados. Puede responder tanto a desafíos significativos como a objetivos concretos y medibles.',
+      right:'Tiende a motivarse por avances tangibles, tareas concretas y metas claras. Funciona bien en contextos de ejecución definida y resultados visibles.',
+      tags_left:['Propósito','Aprendizaje','Desafío'], tags_right:['Resultado','Concreción','Practicidad'] },
+  P:{ name:'Presión y cambio', sub:'Flexible bajo presión ↔ Requiere mayor estabilidad', color:'#a85e1a', bg:'#f5ede3', barColor:'#a85e1a', icon:'🌡️',
+      poles:['Flexible bajo presión','Requiere mayor estabilidad'],
+      left:'Suele sostener el desempeño en entornos cambiantes, urgentes o ambiguos. Tiende a enfocarse en resolver y adaptarse con rapidez.',
+      mid:'Tolera bien niveles moderados de presión, aunque cambios simultáneos o prolongados pueden exigir reorganización y apoyo contextual.',
+      right:'Rinde mejor en contextos previsibles, ordenados y con estabilidad de prioridades. Puede verse afectado por alta variabilidad o urgencias sostenidas.',
+      tags_left:['Resiliente','Flexible','Orientado a solución'], tags_right:['Estructura','Previsibilidad','Cuidado'] },
+  R:{ name:'Relaciones y trabajo con otros', sub:'Articulador y colaborativo ↔ Autónomo e independiente', color:'#3a6b4f', bg:'#e8f0eb', barColor:'#3a6b4f', icon:'🤝',
+      poles:['Articulador y colaborativo','Autónomo e independiente'],
+      left:'Tiende a coordinar, alinear y facilitar el trabajo con otros. Puede intervenir en contextos difusos o conflictivos para ordenar la interacción.',
+      mid:'Se adapta tanto al trabajo colaborativo como al autónomo. Puede integrarse al equipo sin depender de él para funcionar.',
+      right:'Tiende a trabajar mejor con independencia, roles claros y baja interferencia. Puede preferir vínculos funcionales y espacios de autonomía definidos.',
+      tags_left:['Colaborativo','Articulación','Influencia'], tags_right:['Autonomía','Claridad de rol','Independencia'] },
+  E:{ name:'Ejecución y gestión operativa', sub:'Requiere mayor estructura ↔ Avance autónomo', color:'#b03030', bg:'#f5e8e8', barColor:'#b03030', icon:'🛠️',
+      poles:['Requiere mayor estructura','Avance autónomo'],
+      left:'Tiende a requerir instrucciones claras, seguimiento o condiciones más ordenadas para sostener una ejecución consistente y fluida.',
+      mid:'Puede ejecutar con autonomía razonable, aunque ciertos contextos de desorden o falta de definición pueden ralentizar su avance.',
+      right:'Tiende a avanzar incluso con ambigüedad, sostener continuidad y reorganizarse frente a obstáculos. Es un perfil fuerte para entornos operativos exigentes.',
+      tags_left:['Estructura','Claridad','Marco de apoyo'], tags_right:['Ejecución','Autonomía','Seguimiento'] },
+  V:{ name:'Disponibilidad y flexibilidad', sub:'Protección del tiempo personal ↔ Alta disponibilidad operativa', color:'#8a4f9e', bg:'#f2e9f7', barColor:'#8a4f9e', icon:'⏱️',
+      poles:['Protección del tiempo personal','Alta disponibilidad operativa'],
+      left:'Tiende a resguardar límites claros entre trabajo y vida personal. Funciona mejor con previsibilidad, planificación y una demanda operativa acotada.',
+      mid:'Puede responder a exigencias adicionales en momentos puntuales, pero necesita equilibrio y anticipación para sostener su desempeño.',
+      right:'Tiende a aumentar su disponibilidad cuando el proyecto lo requiere, adaptando agenda y nivel de involucramiento frente a fases críticas o urgencias.',
+      tags_left:['Límites claros','Previsibilidad','Equilibrio'], tags_right:['Disponibilidad','Flexibilidad','Compromiso operativo'] },
+};
 
-    <div class="info-grid">
-      <div class="info-item"><span>Nombre:</span> <span id="val-nombre"></span></div>
-      <div class="info-item"><span>Fecha de Test:</span> <span id="val-fecha"></span></div>
-      <div class="info-item"><span>Correo:</span> <span id="val-correo"></span></div>
-      <div class="info-item"><span>Experiencia:</span> <span id="val-exp"></span></div>
-    </div>
+function getProfileLabel(leftPct, meta){
+  if(leftPct >= 65) return `Predominio: ${meta.poles[0]}`;
+  if(leftPct <= 35) return `Predominio: ${meta.poles[1]}`;
+  return 'Perfil equilibrado';
+}
 
-    <h3 style="color: #2D5A27; text-align: center;">Gráfico de Dimensiones (Escala 1 a 4)</h3>
-    <div class="chart-container"><canvas id="radarChart"></canvas></div>
+// 1. EL ENLACE DE TU GOOGLE SHEETS
+const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5f_FRIjEuKWkWLETxobaqxwb8nFsYv-NYHiIlBpjG3e8cQxFP6K7i2NmkmFGpaqtJqR3_G2mTTRTS/pub?gid=2020114578&single=true&output=csv';
 
-    <h3 style="color: #2D5A27;">Análisis de Tendencias</h3>
-    <table>
-      <thead><tr><th>Dimensión</th><th>Puntaje</th><th>Tendencia Predominante</th></tr></thead>
-      <tbody id="tabla-tendencias"></tbody>
-    </table>
-  </div>
+let baseDeDatos = [];
 
-  <script>
-    // 1. PEGA AQUÍ LA URL EXACTA QUE SALE EN LA BARRA DE DIRECCIONES DE TU FOTO
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5f_FRIjEuKWkWLETxobaqxwb8nFsYv-NYHiIlBpjG3e8cQxFP6K7i2NmkmFGpaqtJqR3_G2mTTRTS/pub?gid=2020114578&single=true&output=csv';
+Papa.parse(csvUrl, {
+  download: true,
+  header: false,
+  complete: function(results) {
+    const filas = results.data;
+    const selector = document.getElementById('lista-candidatos');
     
-    let baseDeDatos = [];
-    let graficoActual = null;
-
-    Papa.parse(csvUrl, {
-      download: true,
-      header: false,
-      complete: function(results) {
-        const filas = results.data;
-        const selector = document.getElementById('lista-candidatos');
-        
-        selector.innerHTML = '<option value="">-- Seleccione un candidato --</option>';
-
-        filas.forEach((fila, index) => {
-          const nombre = fila[2]; // Basado en tu foto, el nombre es la posición 2
-          
-          if(nombre && nombre.trim() !== "" && nombre.toLowerCase() !== "nombre" && nombre.toLowerCase() !== "nombre del candidato" && nombre.toLowerCase() !== "marca temporal") {
-            baseDeDatos[index] = fila; 
-            let opcion = document.createElement('option');
-            opcion.value = index;
-            opcion.text = nombre;
-            selector.appendChild(opcion);
-          }
-        });
-
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
+    filas.forEach((fila, index) => {
+      const nombre = fila[2]; // Busca el nombre en la columna C
+      if(nombre && nombre.trim() !== "" && nombre.toLowerCase() !== "nombre" && nombre.toLowerCase() !== "nombre del candidato" && nombre.toLowerCase() !== "marca temporal") {
+        baseDeDatos[index] = fila; 
+        let opcion = document.createElement('option');
+        opcion.value = index;
+        opcion.text = nombre;
+        selector.appendChild(opcion);
       }
     });
 
-    function mostrarCandidato(indexFila) {
-      if(!indexFila || indexFila === "") return;
-      
-      const fila = baseDeDatos[indexFila];
-      
-      // Extracción milimétrica basada en tu foto
-      document.getElementById('val-fecha').innerText = fila[0];
-      document.getElementById('val-correo').innerText = fila[1];
-      document.getElementById('val-nombre').innerText = fila[2];
-      document.getElementById('val-cargo').innerText = fila[3]; // Si no tienes cargo, saldrá vacío
-      document.getElementById('val-exp').innerText = fila[4];
+    document.getElementById('loading').style.display = 'none';
+  }
+});
 
-      // Los puntajes matemáticos están en las posiciones 53 a 58
-      const p = [
-        parseFloat(fila[53]), parseFloat(fila[54]), parseFloat(fila[55]), 
-        parseFloat(fila[56]), parseFloat(fila[57]), parseFloat(fila[58])
-      ];
+function mostrarCandidato(indexFila) {
+  if(!indexFila || indexFila === "") {
+    document.getElementById('resultsWrap').style.display='none';
+    return;
+  }
+  
+  const fila = baseDeDatos[indexFila];
+  const rw = document.getElementById('resultsWrap');
+  rw.style.display='block';
 
-      // Nombres y lógicas (Escala 1 a 4, punto medio 2.5)
-      const nombres = ["Toma de Decisiones", "Motivación", "Presión y Cambio", "Relaciones", "Ejecución", "Disponibilidad"];
-      const textos = [
-        p[0] < 2.5 ? "Analítico y riguroso" : "Ágil y resolutivo",
-        p[1] < 2.5 ? "Estabilidad y seguridad" : "Logro y crecimiento",
-        p[2] < 2.5 ? "Estructura y planificación" : "Adaptabilidad y flexibilidad",
-        p[3] < 2.5 ? "Trabajo individual" : "Trabajo colaborativo",
-        p[4] < 2.5 ? "Estratégico y global" : "Operativo y detallista",
-        p[5] < 2.5 ? "Horario fijo y predecible" : "Disponibilidad amplia"
-      ];
+  // Datos del candidato
+  const fechaStr = fila[0];
+  const correo = fila[1];
+  const nombre = fila[2];
+  const cargo = fila[3];
+  const exp = fila[4];
 
-      let htmlTabla = '';
-      for(let i=0; i<6; i++){
-        htmlTabla += `<tr>
-          <td>${nombres[i]}</td>
-          <td style="text-align:center; font-weight:bold; color:#2D5A27;">${(p[i] || 0).toFixed(1)}</td>
-          <td class="tendencia">${textos[i]}</td>
-        </tr>`;
-      }
-      document.getElementById('tabla-tendencias').innerHTML = htmlTabla;
+  // Extraer puntajes (Columnas 53 a 58)
+  const avg = {
+    D: parseFloat(fila[53]) || 2.5,
+    M: parseFloat(fila[54]) || 2.5,
+    P: parseFloat(fila[55]) || 2.5,
+    R: parseFloat(fila[56]) || 2.5,
+    E: parseFloat(fila[57]) || 2.5,
+    V: parseFloat(fila[58]) || 2.5
+  };
 
-      if(graficoActual) { graficoActual.destroy(); }
+  const dims=['D','M','P','R','E','V'];
 
-      const ctx = document.getElementById('radarChart').getContext('2d');
-      graficoActual = new Chart(ctx, {
-        type: 'radar',
-        data: {
-          labels: nombres,
-          datasets: [{
-            label: 'Puntaje de ' + fila[2],
-            data: p,
-            backgroundColor: 'rgba(45, 90, 39, 0.2)', 
-            borderColor: 'rgba(45, 90, 39, 1)',       
-            pointBackgroundColor: 'rgba(45, 90, 39, 1)',
-            borderWidth: 2
-          }]
-        },
-        options: { 
-          scales: { 
-            r: { 
-              min: 1, 
-              max: 4, 
-              ticks: { stepSize: 1 } 
-            } 
-          } 
-        }
-      });
-    }
-  </script>
+  // Dibujar Gráfico SVG
+  const cx=90, cy=90, r=65;
+  const angles=dims.map((_,i)=>((i/dims.length)*2*Math.PI)-(Math.PI/2));
+  const points=dims.map((d,i)=>{
+    const leftPct=((avg[d]-1)/3); // Ajustado a escala de 1 a 4
+    const rr=leftPct*r;
+    return [cx+rr*Math.cos(angles[i]), cy+rr*Math.sin(angles[i])];
+  });
+  const polyPts=points.map(p=>p.join(',')).join(' ');
+  const axisLines=dims.map((_,i)=>`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(angles[i])}" y2="${cy+r*Math.sin(angles[i])}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`).join('');
+  const circles=[0.25,0.5,0.75,1].map(f=>`<circle cx="${cx}" cy="${cy}" r="${r*f}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`).join('');
+  const radarSVG=`<svg width="180" height="180" viewBox="0 0 180 180">${circles}${axisLines}<polygon points="${polyPts}" fill="rgba(90,148,112,0.25)" stroke="#5a9470" stroke-width="1.5"/>${points.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#5a9470"/>`).join('')}</svg>`;
+
+  // Leyendas
+  const legendHTML=dims.map(d=>{
+    const meta=dimMeta[d];
+    const leftPct=Math.round(((avg[d]-1)/3)*100); // Ajustado a escala 1 a 4
+    return `<div class="legend-item"><div class="legend-dot" style="background:${meta.barColor}"></div><div class="legend-label">${meta.name}</div><div class="legend-val">${getProfileLabel(leftPct, meta)}</div></div>`;
+  }).join('');
+
+  // Tarjetas de Dimensiones
+  const dimCards=dims.map(d=>{
+    const meta=dimMeta[d];
+    const leftPct=Math.round(((avg[d]-1)/3)*100); // Ajustado a escala 1 a 4
+    const rightPos=100-leftPct;
+    const badge=getProfileLabel(leftPct, meta);
+    const interp=leftPct>=65 ? meta.left : leftPct<=35 ? meta.right : meta.mid;
+    const tags=leftPct>=65 ? meta.tags_left : leftPct<=35 ? meta.tags_right : [...meta.tags_left.slice(0,1), ...meta.tags_right.slice(0,2)];
+    return `<div class="dim-card">
+      <div class="dim-card-top">
+        <div class="dim-icon" style="background:${meta.bg}">${meta.icon}</div>
+        <div class="dim-card-texts">
+          <div class="dim-card-name">${meta.name}</div>
+          <div class="dim-card-sub">${meta.sub}</div>
+        </div>
+        <div class="dim-score-badge" style="background:${meta.bg};color:${meta.barColor}">${badge}</div>
+      </div>
+      <div class="dim-poles">
+        <span class="dim-pole">${meta.poles[0]}</span>
+        <span class="dim-pole">${meta.poles[1]}</span>
+      </div>
+      <div class="dim-bar-wrap">
+        <div class="dim-bar-bg"></div>
+        <div class="dim-bar-marker" style="left:${rightPos}%;background:${meta.barColor}"></div>
+      </div>
+      <div class="dim-interpretation">${interp}</div>
+      <div class="dim-facets">${tags.map(t=>`<span class="facet-tag" style="background:${meta.bg};color:${meta.barColor}">${t}</span>`).join('')}</div>
+    </div>`;
+  }).join('');
+
+  // Inyectar HTML
+  rw.innerHTML=`
+    <div class="results-hero">
+      <div class="results-hero-inner">
+        <div class="r-eyebrow">SER Ambiental · Resultados del perfil · ${fechaStr}</div>
+        <div class="r-name">${nombre}</div>
+        <div class="r-meta">${cargo || 'Cargo no especificado'} · ${exp || 'Exp no especificada'}</div>
+        <div class="radar-row">
+          <div class="radar-svg-wrap">${radarSVG}</div>
+          <div class="radar-legend">${legendHTML}</div>
+        </div>
+      </div>
+    </div>
+    <div class="results-body">
+      <div class="print-row"><button class="btn-print" onclick="window.print()">↓ Guardar como PDF</button></div>
+      ${dimCards}
+    </div>`;
+}
+</script>
 </body>
 </html>
