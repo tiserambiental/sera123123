@@ -38,7 +38,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
 .selector-wrap select option { background:var(--ink); color:var(--white); }
 #loading { color:var(--sage-m); font-size:14px; margin-top:10px; font-weight:500; }
 
-/* EMPTY STATE (Pantalla de relleno) */
+/* EMPTY STATE */
 .empty-state { max-width:600px; margin:4rem auto; text-align:center; padding:3rem 2rem; background:var(--white); border:1px dashed var(--sage-m); border-radius:14px; display:none; }
 .empty-state-icon { font-size:3rem; margin-bottom:1rem; opacity:0.8; }
 .empty-state h2 { font-family:var(--display); font-size:1.8rem; color:var(--sage); margin-bottom:0.75rem; font-weight:300; }
@@ -126,59 +126,25 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
 <div id="emptyState" class="empty-state">
   <div class="empty-state-icon">📊</div>
   <h2>Panel de Resultados</h2>
-  <p>Bienvenido al panel de evaluación de <strong>SER Ambiental</strong>. Por favor, utilice el menú superior para seleccionar a un candidato y visualizar su perfil psicológico, gráfico de dimensiones y análisis detallado de tendencias.</p>
+  <p>Bienvenido al panel de evaluación de <strong>SER Ambiental</strong>. Seleccione un candidato para visualizar su perfil psicológico y análisis de tendencias.</p>
 </div>
 
 <div class="results-wrap" id="resultsWrap"></div>
 
 <script>
-// BASE DE DATOS E INTERPRETACIONES
 const dimMeta = {
-  D:{ name:'Toma de decisiones', sub:'Analítico y riguroso ↔ Ágil y resolutivo', color:'#1e6b78', bg:'#e4f0f2', barColor:'#1e6b78', icon:'⚖️',
-      poles:['Analítico y riguroso','Ágil y resolutivo'],
-      left:'Tiende a decidir con método, estructura y evaluación previa. Valora criterios claros y reduce el riesgo antes de actuar. Aporta rigor en contextos técnicos y complejos.',
-      mid:'Alterna entre análisis y rapidez según el contexto. Puede estructurar cuando es necesario, pero también avanzar con flexibilidad.',
-      right:'Tiende a decidir con agilidad y tolerancia a la información incompleta. Puede responder rápido, aunque a veces con menor profundidad analítica inicial.',
-      tags_left:['Analítico','Criterioso','Riguroso'], tags_right:['Ágil','Resolutivo','Pragmático'] },
-  M:{ name:'Motivación y orientación', sub:'Propósito y aprendizaje ↔ Resultado y concreción', color:'#5a3a7a', bg:'#ede8f5', barColor:'#5a3a7a', icon:'🧭',
-      poles:['Propósito y aprendizaje','Resultado y concreción'],
-      left:'Se moviliza por el sentido, el aprendizaje y los desafíos intelectuales. Requiere comprender el para qué para sostener un alto involucramiento.',
-      mid:'Combina propósito y foco en resultados. Puede responder tanto a desafíos significativos como a objetivos concretos y medibles.',
-      right:'Tiende a motivarse por avances tangibles, tareas concretas y metas claras. Funciona bien en contextos de ejecución definida y resultados visibles.',
-      tags_left:['Propósito','Aprendizaje','Desafío'], tags_right:['Resultado','Concreción','Practicidad'] },
-  P:{ name:'Presión y cambio', sub:'Flexible bajo presión ↔ Requiere mayor estabilidad', color:'#a85e1a', bg:'#f5ede3', barColor:'#a85e1a', icon:'🌡️',
-      poles:['Flexible bajo presión','Requiere mayor estabilidad'],
-      left:'Suele sostener el desempeño en entornos cambiantes, urgentes o ambiguos. Tiende a enfocarse en resolver y adaptarse con rapidez.',
-      mid:'Tolera bien niveles moderados de presión, aunque cambios simultáneos o prolongados pueden exigir reorganización y apoyo contextual.',
-      right:'Rinde mejor en contextos previsibles, ordenados y con estabilidad de prioridades. Puede verse afectado por alta variabilidad o urgencias sostenidas.',
-      tags_left:['Resiliente','Flexible','Orientado a solución'], tags_right:['Estructura','Previsibilidad','Cuidado'] },
-  R:{ name:'Relaciones y trabajo con otros', sub:'Articulador y colaborativo ↔ Autónomo e independiente', color:'#3a6b4f', bg:'#e8f0eb', barColor:'#3a6b4f', icon:'🤝',
-      poles:['Articulador y colaborativo','Autónomo e independiente'],
-      left:'Tiende a coordinar, alinear y facilitar el trabajo con otros. Puede intervenir en contextos difusos o conflictivos para ordenar la interacción.',
-      mid:'Se adapta tanto al trabajo colaborativo como al autónomo. Puede integrarse al equipo sin depender de él para funcionar.',
-      right:'Tiende a trabajar mejor con independencia, roles claros y baja interferencia. Puede preferir vínculos funcionales y espacios de autonomía definidos.',
-      tags_left:['Colaborativo','Articulación','Influencia'], tags_right:['Autonomía','Claridad de rol','Independencia'] },
-  E:{ name:'Ejecución y gestión operativa', sub:'Requiere mayor estructura ↔ Avance autónomo', color:'#b03030', bg:'#f5e8e8', barColor:'#b03030', icon:'🛠️',
-      poles:['Requiere mayor estructura','Avance autónomo'],
-      left:'Tiende a requerir instrucciones claras, seguimiento o condiciones más ordenadas para sostener una ejecución consistente y fluida.',
-      mid:'Puede ejecutar con autonomía razonable, aunque ciertos contextos de desorden o falta de definición pueden ralentizar su avance.',
-      right:'Tiende a avanzar incluso con ambigüedad, sostener continuidad y reorganizarse frente a obstáculos. Es un perfil fuerte para entornos operativos exigentes.',
-      tags_left:['Estructura','Claridad','Marco de apoyo'], tags_right:['Ejecución','Autonomía','Seguimiento'] },
-  V:{ name:'Disponibilidad y flexibilidad', sub:'Protección del tiempo personal ↔ Alta disponibilidad operativa', color:'#8a4f9e', bg:'#f2e9f7', barColor:'#8a4f9e', icon:'⏱️',
-      poles:['Protección del tiempo personal','Alta disponibilidad operativa'],
-      left:'Tiende a resguardar límites claros entre trabajo y vida personal. Funciona mejor con previsibilidad, planificación y una demanda operativa acotada.',
-      mid:'Puede responder a exigencias adicionales en momentos puntuales, pero necesita equilibrio y anticipación para sostener su desempeño.',
-      right:'Tiende a aumentar su disponibilidad cuando el proyecto lo requiere, adaptando agenda y nivel de involucramiento frente a fases críticas o urgencias.',
-      tags_left:['Límites claros','Previsibilidad','Equilibrio'], tags_right:['Disponibilidad','Flexibilidad','Compromiso operativo'] },
+  D:{ name:'Toma de decisiones', sub:'Analítico y riguroso ↔ Ágil y resolutivo', color:'#1e6b78', bg:'#e4f0f2', barColor:'#1e6b78', icon:'⚖️', poles:['Analítico y riguroso','Ágil y resolutivo'], left:'Tiende a decidir con método, estructura y evaluación previa. Valora criterios claros y reduce el riesgo antes de actuar.', mid:'Alterna entre análisis y rapidez según el contexto.', right:'Tiende a decidir con agilidad y tolerancia a la información incompleta.', tags_left:['Analítico','Riguroso'], tags_right:['Ágil','Resolutivo'] },
+  M:{ name:'Motivación y orientación', sub:'Propósito y aprendizaje ↔ Resultado y concreción', color:'#5a3a7a', bg:'#ede8f5', barColor:'#5a3a7a', icon:'🧭', poles:['Propósito y aprendizaje','Resultado y concreción'], left:'Se moviliza por el sentido y los desafíos intelectuales.', mid:'Combina propósito y foco en resultados.', right:'Tiende a motivarse por avances tangibles y metas claras.', tags_left:['Propósito','Desafío'], tags_right:['Resultado','Concreción'] },
+  P:{ name:'Presión y cambio', sub:'Flexible bajo presión ↔ Requiere mayor estabilidad', color:'#a85e1a', bg:'#f5ede3', barColor:'#a85e1a', icon:'🌡️', poles:['Flexible bajo presión','Requiere mayor estabilidad'], left:'Sostiene el desempeño en entornos cambiantes o urgentes.', mid:'Tolera bien niveles moderados de presión.', right:'Rinde mejor en contextos previsibles y ordenados.', tags_left:['Resiliente','Flexible'], tags_right:['Estructura','Previsibilidad'] },
+  R:{ name:'Relaciones y trabajo con otros', sub:'Articulador y colaborativo ↔ Autónomo e independiente', color:'#3a6b4f', bg:'#e8f0eb', barColor:'#3a6b4f', icon:'🤝', poles:['Articulador y colaborativo','Autónomo e independiente'], left:'Tiende a coordinar y facilitar el trabajo con otros.', mid:'Se adapta tanto al trabajo colaborativo como al autónomo.', right:'Tiende a trabajar mejor con independencia y roles claros.', tags_left:['Colaborativo','Influencia'], tags_right:['Autonomía','Independencia'] },
+  E:{ name:'Ejecución y gestión operativa', sub:'Requiere mayor estructura ↔ Avance autónomo', color:'#b03030', bg:'#f5e8e8', barColor:'#b03030', icon:'🛠️', poles:['Requiere mayor estructura','Avance autónomo'], left:'Requiere instrucciones claras para una ejecución consistente.', mid:'Puede ejecutar con autonomía razonable.', right:'Tiende a avanzar incluso con ambigüedad.', tags_left:['Claridad','Marco de apoyo'], tags_right:['Ejecución','Autonomía'] },
+  V:{ name:'Disponibilidad y flexibilidad', sub:'Protección del tiempo personal ↔ Alta disponibilidad operativa', color:'#8a4f9e', bg:'#f2e9f7', barColor:'#8a4f9e', icon:'⏱️', poles:['Protección del tiempo personal','Alta disponibilidad operativa'], left:'Resguarda límites claros entre trabajo y vida personal.', mid:'Puede responder a exigencias adicionales puntuales.', right:'Aumenta su disponibilidad cuando el proyecto lo requiere.', tags_left:['Límites claros','Equilibrio'], tags_right:['Disponibilidad','Compromiso'] },
 };
 
 function getProfileLabel(leftPct, meta){
-  // Corte de guillotina al 50%. Adiós al perfil equilibrado.
-  if(leftPct >= 50) return `Predominio: ${meta.poles[0]}`;
-  else return `Predominio: ${meta.poles[1]}`;
+  return leftPct >= 50 ? `Predominio: ${meta.poles[0]}` : `Predominio: ${meta.poles[1]}`;
 }
 
-// ENLACE CSV PÚBLICO
 const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ5f_FRIjEuKWkWLETxobaqxwb8nFsYv-NYHiIlBpjG3e8cQxFP6K7i2NmkmFGpaqtJqR3_G2mTTRTS/pub?gid=2020114578&single=true&output=csv';
 
 let baseDeDatos = [];
@@ -189,12 +155,10 @@ Papa.parse(csvUrl, {
   complete: function(results) {
     const filas = results.data;
     const selector = document.getElementById('lista-candidatos');
-    
     filas.forEach((fila, index) => {
       const nombre = fila[2] ? fila[2].trim() : ""; 
       const nombreStr = nombre.toLowerCase();
-      
-      if(nombre && nombreStr !== "" && nombreStr !== "nombre" && nombreStr !== "nombre del candidato" && nombreStr !== "nombre completo" && nombreStr !== "marca temporal") {
+      if(nombre && !["nombre","marca temporal","nombre completo"].includes(nombreStr)) {
         baseDeDatos[index] = fila; 
         let opcion = document.createElement('option');
         opcion.value = index;
@@ -202,14 +166,13 @@ Papa.parse(csvUrl, {
         selector.appendChild(opcion);
       }
     });
-
     document.getElementById('loading').style.display = 'none';
     document.getElementById('emptyState').style.display = 'block';
   }
 });
 
 function mostrarCandidato(indexFila) {
-  if(!indexFila || indexFila === "") {
+  if(!indexFila) {
     document.getElementById('resultsWrap').style.display = 'none';
     document.getElementById('emptyState').style.display = 'block';
     return;
@@ -220,133 +183,59 @@ function mostrarCandidato(indexFila) {
   const rw = document.getElementById('resultsWrap');
   rw.style.display = 'block';
 
-  // Datos del candidato
-  const fechaStr = fila[0];
-  const correo = fila[1];
-  const nombre = fila[2];
-  const cargo = fila[3];
-  const exp = fila[4];
+  const fechaStr = fila[0], correo = fila[1], nombre = fila[2], cargo = fila[3], exp = fila[4];
 
-  // --- CÁLCULO DE VARIANZA (Nivel de Polarización) e INTERPRETACIÓN ---
-  let respuestas = [];
+  // --- CÁLCULOS ESTADÍSTICOS (VARIANZA Y CONTADOR DE 3) ---
+  let respuestas = [], cont3 = 0;
   for(let i = 5; i <= 52; i++) {
     let valor = parseFloat(fila[i]);
     if(!isNaN(valor) && valor >= 1 && valor <= 4) {
       respuestas.push(valor);
+      if(valor === 3) cont3++;
     }
   }
 
-  let varianzaText = "Sin datos";
-  let varianzaEtiqueta = "";
-  
+  let varianzaText = "0.00", varianzaEtiqueta = "Sin datos";
   if(respuestas.length > 0) {
-    let suma = respuestas.reduce((a, b) => a + b, 0);
-    let media = suma / respuestas.length;
-    let sumaDiferencias = respuestas.reduce((a, b) => a + Math.pow(b - media, 2), 0);
-    let varianza = sumaDiferencias / respuestas.length;
-    
+    let suma = respuestas.reduce((a, b) => a + b, 0), media = suma / respuestas.length;
+    let sumaDif = respuestas.reduce((a, b) => a + Math.pow(b - media, 2), 0);
+    let varianza = sumaDif / respuestas.length;
     varianzaText = varianza.toFixed(2);
-    
-    // Asignación de la etiqueta descriptiva según el valor
-    if(varianza >= 1.0) {
-        varianzaEtiqueta = "Convicciones muy marcadas (Posturas definidas)";
-    } else if (varianza >= 0.5) {
-        varianzaEtiqueta = "Equilibrio normal (Consistencia moderada)";
-    } else {
-        varianzaEtiqueta = "Tendencia a la neutralidad (Cautela al decidir)";
-    }
+    varianzaEtiqueta = varianza >= 1.0 ? "Convicciones marcadas" : (varianza >= 0.5 ? "Equilibrio normal" : "Tendencia neutral");
   }
-  // ---------------------------------------------------
 
-  // Extraer puntajes (Columnas 53 a 58)
-  const avg = {
-    D: parseFloat(fila[53]) || 2.5,
-    M: parseFloat(fila[54]) || 2.5,
-    P: parseFloat(fila[55]) || 2.5,
-    R: parseFloat(fila[56]) || 2.5,
-    E: parseFloat(fila[57]) || 2.5,
-    V: parseFloat(fila[58]) || 2.5
-  };
-
+  const avg = { D: parseFloat(fila[53])||2.5, M: parseFloat(fila[54])||2.5, P: parseFloat(fila[55])||2.5, R: parseFloat(fila[56])||2.5, E: parseFloat(fila[57])||2.5, V: parseFloat(fila[58])||2.5 };
   const dims=['D','M','P','R','E','V'];
 
-  // Dibujar Gráfico SVG
+  // Radar SVG
   const cx=90, cy=90, r=65;
-  const angles=dims.map((_,i)=>((i/dims.length)*2*Math.PI)-(Math.PI/2));
+  const angles=dims.map((_,i)=>((i/6)*2*Math.PI)-(Math.PI/2));
   const points=dims.map((d,i)=>{
-    const leftPct=((avg[d]-1)/3); 
-    const rr=leftPct*r;
+    const rr=((avg[d]-1)/3)*r;
     return [cx+rr*Math.cos(angles[i]), cy+rr*Math.sin(angles[i])];
   });
-  const polyPts=points.map(p=>p.join(',')).join(' ');
-  const axisLines=dims.map((_,i)=>`<line x1="${cx}" y1="${cy}" x2="${cx+r*Math.cos(angles[i])}" y2="${cy+r*Math.sin(angles[i])}" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>`).join('');
-  const circles=[0.25,0.5,0.75,1].map(f=>`<circle cx="${cx}" cy="${cy}" r="${r*f}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`).join('');
-  const radarSVG=`<svg width="180" height="180" viewBox="0 0 180 180">${circles}${axisLines}<polygon points="${polyPts}" fill="rgba(90,148,112,0.25)" stroke="#5a9470" stroke-width="1.5"/>${points.map(p=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.5" fill="#5a9470"/>`).join('')}</svg>`;
+  const radarSVG=`<svg width="180" height="180" viewBox="0 0 180 180">${[0.25,0.5,0.75,1].map(f=>`<circle cx="90" cy="90" r="${65*f}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`).join('')}<polygon points="${points.map(p=>p.join(',')).join(' ')}" fill="rgba(90,148,112,0.25)" stroke="#5a9470" stroke-width="1.5"/></svg>`;
 
-  // Leyendas
-  const legendHTML=dims.map(d=>{
-    const meta=dimMeta[d];
-    const leftPct=Math.round(((avg[d]-1)/3)*100); 
-    return `<div class="legend-item"><div class="legend-dot" style="background:${meta.barColor}"></div><div class="legend-label">${meta.name}</div><div class="legend-val">${getProfileLabel(leftPct, meta)}</div></div>`;
-  }).join('');
-
-  // Tarjetas de Dimensiones
   const dimCards=dims.map(d=>{
-    const meta=dimMeta[d];
-    const leftPct=Math.round(((avg[d]-1)/3)*100); 
-    const rightPos=100-leftPct;
-    const badge=getProfileLabel(leftPct, meta);
-    
-    // Lógica: O es blanco o es negro, no hay grises
-    const interp=leftPct>=50 ? meta.left : meta.right;
-    const tags=leftPct>=50 ? meta.tags_left : meta.tags_right;
-    
-    return `<div class="dim-card">
-      <div class="dim-card-top">
-        <div class="dim-icon" style="background:${meta.bg}">${meta.icon}</div>
-        <div class="dim-card-texts">
-          <div class="dim-card-name">${meta.name}</div>
-          <div class="dim-card-sub">${meta.sub}</div>
-        </div>
-        <div class="dim-score-badge" style="background:${meta.bg};color:${meta.barColor}">${badge}</div>
-      </div>
-      <div class="dim-poles">
-        <span class="dim-pole">${meta.poles[0]}</span>
-        <span class="dim-pole">${meta.poles[1]}</span>
-      </div>
-      <div class="dim-bar-wrap">
-        <div class="dim-bar-bg"></div>
-        <div class="dim-bar-marker" style="left:${rightPos}%;background:${meta.barColor}"></div>
-      </div>
-      <div class="dim-interpretation">${interp}</div>
-      <div class="dim-facets">${tags.map(t=>`<span class="facet-tag" style="background:${meta.bg};color:${meta.barColor}">${t}</span>`).join('')}</div>
-    </div>`;
+    const meta=dimMeta[d], leftPct=Math.round(((avg[d]-1)/3)*100);
+    return `<div class="dim-card"><div class="dim-card-top"><div class="dim-icon" style="background:${meta.bg}">${meta.icon}</div><div class="dim-card-texts"><div class="dim-card-name">${meta.name}</div><div class="dim-card-sub">${meta.sub}</div></div><div class="dim-score-badge" style="background:${meta.bg};color:${meta.barColor}">${getProfileLabel(leftPct,meta)}</div></div><div class="dim-bar-wrap"><div class="dim-bar-bg"></div><div class="dim-bar-marker" style="left:${100-leftPct}%;background:${meta.barColor}"></div></div><div class="dim-interpretation">${leftPct>=50?meta.left:meta.right}</div></div>`;
   }).join('');
 
-  // Inyectar HTML (Con el indicador de Varianza y su explicación)
   rw.innerHTML=`
     <div class="results-hero">
       <div class="results-hero-inner">
-        <div class="r-eyebrow">SER Ambiental · Resultados del perfil · ${fechaStr}</div>
+        <div class="r-eyebrow">SER Ambiental · Resultados · ${fechaStr}</div>
         <div class="r-name">${nombre}</div>
-        <div class="r-meta" style="margin-bottom: 1rem;">${cargo || 'Cargo no especificado'} · ${exp || 'Exp no especificada'}</div>
-        
-        <div class="r-meta" style="background: rgba(255,255,255,0.05); padding: 10px 15px; border-radius: 8px; display: inline-block; border: 1px solid rgba(255,255,255,0.1);">
-          <strong>Índice de Polarización: ${varianzaText}</strong> <br>
-          <span style="color: rgba(255,255,255,0.6); font-style: italic;">${varianzaEtiqueta}</span>
+        <div class="r-meta">${cargo || 'Cargo N/A'} · ${exp || 'Exp N/A'}</div>
+        <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:8px; color:white; font-size:12px; border:1px solid rgba(255,255,255,0.1); margin-bottom:20px;">
+          <strong>Polarización: ${varianzaText}</strong> (${varianzaEtiqueta}) | <strong>Respuestas Neutras (Valor 3): ${cont3}</strong>
         </div>
-        
-        <div class="radar-row" style="margin-top: 1.5rem;">
-          <div class="radar-svg-wrap">${radarSVG}</div>
-          <div class="radar-legend">${legendHTML}</div>
-        </div>
+        <div class="radar-row">${radarSVG}</div>
       </div>
     </div>
-    <div class="results-body">
-      <div class="print-row"><button class="btn-print" onclick="window.print()">↓ Guardar como PDF</button></div>
-      ${dimCards}
-    </div>`;
+    <div class="results-body"><button class="btn-print" onclick="window.print()">↓ Guardar PDF</button>${dimCards}</div>`;
 }
 </script>
 </body>
+</html>
 </html>
