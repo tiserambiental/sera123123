@@ -44,7 +44,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
 .empty-state h2 { font-family:var(--display); font-size:1.8rem; color:var(--sage); margin-bottom:0.75rem; font-weight:300; }
 .empty-state p { font-size:14px; color:var(--ink2); line-height:1.6; }
 
-/* RESULTS */
+/* RESULTS HERO */
 .results-wrap{display:none;min-height:100vh;background:var(--bg)}
 .results-hero{
   background:var(--ink);padding:3rem 2rem 2.5rem;
@@ -62,6 +62,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
 .legend-label{font-size:12px;color:rgba(255,255,255,0.55)}
 .legend-val{font-size:13px;font-weight:500;color:var(--white);margin-left:auto;min-width:36px;text-align:right}
 
+/* RESULTS BODY & CARDS */
 .results-body{max-width:680px;margin:0 auto;padding:2rem 1.5rem 4rem}
 .dim-card{
   background:var(--white);border:1px solid var(--line);border-radius:14px;
@@ -95,6 +96,15 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
 .dim-facets{display:flex;flex-wrap:wrap;gap:6px;margin-top:0.75rem}
 .facet-tag{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500}
 
+/* TABLA DE TENDENCIAS (Restaurada y estilizada) */
+.tabla-tendencias-wrap { background:var(--white); border:1px solid var(--line); border-radius:14px; margin-bottom:2rem; overflow:hidden; }
+.tabla-tendencias { width:100%; border-collapse:collapse; text-align:left; }
+.tabla-tendencias th { background:var(--sage-l); color:var(--sage); padding:12px 16px; font-size:11px; text-transform:uppercase; letter-spacing:0.06em; font-weight:500; border-bottom:1px solid var(--line); }
+.tabla-tendencias td { padding:12px 16px; font-size:13px; color:var(--ink2); border-bottom:1px solid var(--line); }
+.tabla-tendencias tr:last-child td { border-bottom:none; }
+.t-score { text-align:center; font-weight:600; color:var(--sage-m); }
+.t-tendencia { font-weight:500; color:var(--ink); }
+
 .print-row{margin-bottom:1.5rem}
 .btn-print{
   font-family:var(--body);font-size:12px;font-weight:400;
@@ -126,7 +136,7 @@ body{font-family:var(--body);background:var(--bg);color:var(--ink);min-height:10
 <div id="emptyState" class="empty-state">
   <div class="empty-state-icon">📊</div>
   <h2>Panel de Resultados</h2>
-  <p>Bienvenido al panel de evaluación de <strong>SER Ambiental</strong>. Seleccione un candidato para visualizar su perfil psicológico y análisis de tendencias.</p>
+  <p>Bienvenido al panel de evaluación de <strong>SER Ambiental</strong>. Seleccione un candidato para visualizar su perfil psicológico, tabla de tendencias y análisis detallado.</p>
 </div>
 
 <div class="results-wrap" id="resultsWrap"></div>
@@ -185,7 +195,7 @@ function mostrarCandidato(indexFila) {
 
   const fechaStr = fila[0], correo = fila[1], nombre = fila[2], cargo = fila[3], exp = fila[4];
 
-  // --- CÁLCULOS ESTADÍSTICOS (VARIANZA Y CONTADOR DE 3) ---
+  // Cálculos estadísticos
   let respuestas = [], cont3 = 0;
   for(let i = 5; i <= 52; i++) {
     let valor = parseFloat(fila[i]);
@@ -216,10 +226,29 @@ function mostrarCandidato(indexFila) {
   });
   const radarSVG=`<svg width="180" height="180" viewBox="0 0 180 180">${[0.25,0.5,0.75,1].map(f=>`<circle cx="90" cy="90" r="${65*f}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`).join('')}<polygon points="${points.map(p=>p.join(',')).join(' ')}" fill="rgba(90,148,112,0.25)" stroke="#5a9470" stroke-width="1.5"/></svg>`;
 
-  const dimCards=dims.map(d=>{
-    const meta=dimMeta[d], leftPct=Math.round(((avg[d]-1)/3)*100);
-    return `<div class="dim-card"><div class="dim-card-top"><div class="dim-icon" style="background:${meta.bg}">${meta.icon}</div><div class="dim-card-texts"><div class="dim-card-name">${meta.name}</div><div class="dim-card-sub">${meta.sub}</div></div><div class="dim-score-badge" style="background:${meta.bg};color:${meta.barColor}">${getProfileLabel(leftPct,meta)}</div></div><div class="dim-bar-wrap"><div class="dim-bar-bg"></div><div class="dim-bar-marker" style="left:${100-leftPct}%;background:${meta.barColor}"></div></div><div class="dim-interpretation">${leftPct>=50?meta.left:meta.right}</div></div>`;
-  }).join('');
+  let legendHTML = '';
+  let htmlTabla = `<div class="tabla-tendencias-wrap"><table class="tabla-tendencias">
+    <thead><tr><th>Dimensión</th><th style="text-align:center">Puntaje</th><th>Tendencia Predominante</th></tr></thead><tbody>`;
+  let dimCards = '';
+
+  dims.forEach(d => {
+    const meta = dimMeta[d];
+    const scoreVal = avg[d];
+    const scoreText = scoreVal.toFixed(1);
+    const leftPct = Math.round(((scoreVal-1)/3)*100);
+    const tendencia = leftPct >= 50 ? meta.poles[0] : meta.poles[1];
+    
+    // Armar Leyenda (Arriba)
+    legendHTML += `<div class="legend-item"><div class="legend-dot" style="background:${meta.barColor}"></div><div class="legend-label">${meta.name}</div><div class="legend-val">${getProfileLabel(leftPct, meta)}</div></div>`;
+    
+    // Armar Fila de Tabla (Medio)
+    htmlTabla += `<tr><td>${meta.name}</td><td class="t-score">${scoreText}</td><td class="t-tendencia">${tendencia}</td></tr>`;
+
+    // Armar Tarjetas (Abajo)
+    dimCards += `<div class="dim-card"><div class="dim-card-top"><div class="dim-icon" style="background:${meta.bg}">${meta.icon}</div><div class="dim-card-texts"><div class="dim-card-name">${meta.name}</div><div class="dim-card-sub">${meta.sub}</div></div><div class="dim-score-badge" style="background:${meta.bg};color:${meta.barColor}">${getProfileLabel(leftPct,meta)}</div></div><div class="dim-bar-wrap"><div class="dim-bar-bg"></div><div class="dim-bar-marker" style="left:${100-leftPct}%;background:${meta.barColor}"></div></div><div class="dim-interpretation">${leftPct>=50?meta.left:meta.right}</div></div>`;
+  });
+
+  htmlTabla += `</tbody></table></div>`;
 
   rw.innerHTML=`
     <div class="results-hero">
@@ -230,12 +259,19 @@ function mostrarCandidato(indexFila) {
         <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:8px; color:white; font-size:12px; border:1px solid rgba(255,255,255,0.1); margin-bottom:20px;">
           <strong>Polarización: ${varianzaText}</strong> (${varianzaEtiqueta}) | <strong>Respuestas Neutras (Valor 3): ${cont3}</strong>
         </div>
-        <div class="radar-row">${radarSVG}</div>
+        <div class="radar-row">${radarSVG}<div class="radar-legend">${legendHTML}</div></div>
       </div>
     </div>
-    <div class="results-body"><button class="btn-print" onclick="window.print()">↓ Guardar PDF</button>${dimCards}</div>`;
+    <div class="results-body">
+      <div class="print-row"><button class="btn-print" onclick="window.print()">↓ Guardar PDF</button></div>
+      <h3 style="font-family:var(--display); font-size:1.4rem; color:var(--ink); margin-bottom:1rem; font-weight:300;">Análisis de Tendencias</h3>
+      ${htmlTabla}
+      <h3 style="font-family:var(--display); font-size:1.4rem; color:var(--ink); margin-top:2rem; margin-bottom:1rem; font-weight:300;">Detalle por Dimensión</h3>
+      ${dimCards}
+    </div>`;
 }
 </script>
 </body>
+</html>
 </html>
 </html>
